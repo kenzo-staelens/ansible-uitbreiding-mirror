@@ -1,0 +1,31 @@
+---
+- name: Copy docenten SSH keys
+  become: true
+  hosts: servers
+  tasks:
+    - name: Get docenten keys
+      ansible.builtin.uri:
+        url: "https://gitlab.com/{{ item }}.keys"
+        method: GET
+        return_content: true
+        status_code: 200
+        body_format: raw
+      register: result
+      loop:
+        - svenknockaert
+        - roelvs
+        - johan.donne
+    - name: Test
+      ansible.builtin.debug:
+        msg: "{{ item.content | split('\n') }}"
+      loop: "{{ result.results }}"
+      register: var2
+    - name: Test2
+      ansible.builtin.lineinfile:
+        path: /home/ubuntu/.ssh/authorized_keys
+        state: present
+        insertafter: EOF
+        line: "{{ item[1] }}"
+      with_subelements:
+        - "{{ var2.results }}"
+        - msg
